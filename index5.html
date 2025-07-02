@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>媽媽樂早餐屋 - 點餐系統</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin:0; padding:0;
+    color:#333;
+  }
+  header {
+    background:#ffcc80;
+    color:#5d4037;
+    padding:1em;
+    text-align:center;
+    font-weight:bold;
+    font-size:1.4em;
+  }
+  .content {
+    padding:1em;
+  }
+  .category-btn, .action-btn {
+    display:block;
+    width:100%;
+    padding:1.2em;
+    margin:.7em 0;
+    font-size:1.2em;
+    background:white;
+    border:none;
+    border-radius:8px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.2);
+    transition:background .2s;
+  }
+  .category-btn:hover, .action-btn:hover {
+    background:#ffe0b2;
+  }
+  .item {
+    background:white;
+    border-radius:8px;
+    padding:1em;
+    margin:.6em 0;
+    box-shadow:0 1px 4px rgba(0,0,0,0.1);
+  }
+  .item-name {
+    font-weight:bold;
+    font-size:1.1em;
+  }
+  .controls {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-top:.6em;
+  }
+  .controls button {
+    width:38px;
+    height:38px;
+    font-size:1.2em;
+    border:none;
+    background:#ffcc80;
+    color:#5d4037;
+    border-radius:4px;
+    margin-right:.4em;
+  }
+  .controls input {
+    width:50px;
+    text-align:center;
+    font-size:1em;
+  }
+  .size-btn, .taste-btn {
+    padding:.5em 1em;
+    margin:.3em .3em .3em 0;
+    border:1px solid #ccc;
+    border-radius:4px;
+    font-size:1em;
+    cursor:pointer;
+  }
+  .size-btn.active, .taste-btn.active {
+    background:#ffb74d;
+    color:white;
+    border:none;
+  }
+  .cart-item {
+    padding:.6em 0;
+    border-bottom:1px solid #ddd;
+    font-size:1.1em;
+  }
+  .cart-item button {
+    margin-left:.5em;
+    padding:.3em .6em;
+  }
+  .total {
+    font-size:1.3em;
+    text-align:right;
+    margin-top:1em;
+    font-weight:bold;
+  }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>媽媽樂早餐屋</header>
+
+<div class="content" id="categoriesView"></div>
+
+<div class="content hidden" id="subcategoriesView">
+  <h3 id="subTitle"></h3>
+  <div id="subList"></div>
+  <button class="action-btn" onclick="backToCategories()">返回分類</button>
+</div>
+
+<div class="content hidden" id="itemsView">
+  <h3 id="itemsTitle"></h3>
+  <div id="itemsList"></div>
+  <button class="action-btn" onclick="backToCategories()">返回分類</button>
+  <button class="action-btn" onclick="showCart()">查看訂單</button>
+</div>
+
+<div class="content hidden" id="cartView">
+  <h3>已選購項目：</h3>
+  <div id="cartList"></div>
+  <div class="total">總金額：<span id="cartTotal">0</span> 元</div>
+  <button class="action-btn" onclick="submitOrder()">送出訂單</button>
+  <button class="action-btn" onclick="backToCategories()">繼續選購</button>
+</div>
+
+<script>
+// 🟢 完整菜單
+const menuData = [
+  {
+    category: "三明治/漢堡",
+    subcategories: [
+      {
+        name: "三明治",
+        items: [
+          { name:"蔬菜", price:40 },
+          { name:"火腿", price:40 },
+          { name:"肉鬆", price:40 },
+          { name:"培根", price:40 },
+          { name:"豬肉", price:40 },
+          { name:"鮮蝦", price:45 },
+          { name:"玉米", price:45 },
+          { name:"薯泥沙拉", price:45 },
+          { name:"香雞", price:45 },
+          { name:"燻雞", price:45 },
+          { name:"薯餅", price:45 },
+          { name:"豬排", price:50 },
+          { name:"鮪魚", price:50 },
+          { name:"菲力雞", price:50 },
+          { name:"柚香花枝", price:55 },
+          { name:"鱈魚起士", price:60 },
+          { name:"義式香草雞", price:60 },
+          { name:"卡拉雞(辣味)", price:60 }
+        ]
+      },
+      {
+        name: "漢堡",
+        items: [
+          { name:"蔬菜", price:40 },
+          { name:"火腿", price:40 },
+          { name:"肉鬆", price:40 },
+          { name:"培根", price:40 },
+          { name:"豬肉", price:40 },
+          { name:"鮮蝦", price:45 },
+          { name:"玉米", price:45 },
+          { name:"薯泥沙拉", price:45 },
+          { name:"香雞", price:45 },
+          { name:"燻雞", price:45 },
+          { name:"薯餅", price:45 },
+          { name:"豬排", price:50 },
+          { name:"鮪魚", price:50 },
+          { name:"菲力雞", price:50 },
+          { name:"柚香花枝", price:55 },
+          { name:"鱈魚起士", price:60 },
+          { name:"義式香草雞", price:60 },
+          { name:"卡拉雞(辣味)", price:60 }
+        ]
+      }
+    ]
+  },
+  {
+    category: "蛋餅",
+    items: [
+      { name:"原味", price:30 },
+      { name:"起士", price:40 },
+      { name:"蔬菜", price:40 },
+      { name:"火腿", price:40 },
+      { name:"培根", price:40 },
+      { name:"肉鬆", price:45 },
+      { name:"玉米", price:45 },
+      { name:"薯泥沙拉", price:50 },
+      { name:"薯餅", price:50 },
+      { name:"德國香腸", price:50 },
+      { name:"豬排", price:50 },
+      { name:"燻雞", price:50 },
+      { name:"鮪魚", price:50 }
+    ]
+  },
+ {
+  category: "鐵板麵/義大利麵",
+  subcategories: [
+    {
+      name: "鐵板麵",
+      items: [
+        { name: "蘑菇", price: 60 },
+        { name: "黑胡椒", price: 60 },
+        { name: "培根", price: 70, tasteOptions: ["蘑菇", "黑胡椒"] },
+        { name: "豬排", price: 75, tasteOptions: ["蘑菇", "黑胡椒"] },
+        { name: "香雞", price: 75, tasteOptions: ["蘑菇", "黑胡椒"] }
+      ]
+    },
+    {
+      name: "義大利麵",
+      items: [
+        { name: "紅醬義大利麵", price: 75 },
+        { name: "青醬義大利麵", price: 75 },
+        { name: "白醬義大利麵", price: 90 },
+        { name: "泰式花枝", price: 80 }
+      ]
+    }
+  ]
+},
+
+  {
+    category: "飲料",
+    items: [
+      { name:"紅茶", priceM:25, priceL:30 },
+      { name:"奶茶", priceM:25, priceL:30 },
+      { name:"無糖綠茶", priceM:25, priceL:30 },
+      { name:"豆漿(冰)", priceM:25, priceL:30 },
+      { name:"紅茶豆漿", priceM:30, priceL:40 },
+      { name:"柳橙汁", priceM:30, priceL:35 },
+      { name:"蔓越莓汁", priceM:30, priceL:35 },
+      { name:"百香果汁", priceM:30, priceL:35 },
+      { name:"百香紅茶", priceM:30, priceL:35 },
+      { name:"檸檬紅茶", priceM:30, priceL:35 },
+      { name:"鴛鴦奶茶", priceM:35, priceL:40 },
+      { name:"鮮奶茶", priceM:35, priceL:45 },
+      { name:"柚子冰茶", priceM:35, priceL:45 },
+      { name:"可可", priceM:35, priceL:45 },
+      { name:"阿華田", priceM:40, priceL:50 },
+      { name:"可樂", priceM:35, priceL:35 },
+      { name:"雪碧", priceM:35, priceL:35 },
+      { name:"研磨咖啡", priceM:40, priceL:55 },
+      { name:"拿鐵", priceM:50, priceL:65 }
+    ]
+  },
+  {
+    category: "單點",
+    items: [
+      { name:"荷包蛋", price:15 },
+      { name:"起士", price:20 },
+      { name:"火腿", price:20 },
+      { name:"培根", price:20 },
+      { name:"蔬菜", price:25 },
+      { name:"薯餅", price:25 },
+      { name:"豬肉", price:25 },
+      { name:"豬排", price:30 },
+      { name:"德國香腸", price:30 },
+      { name:"香雞", price:30 },
+      { name:"燻雞", price:30 },
+      { name:"薯泥沙拉", price:35 },
+      { name:"牛肉", price:35 },
+      { name:"鮮蝦", price:35 },
+      { name:"玉米蛋", price:40 },
+      { name:"菲力雞", price:40 },
+      { name:"鱈魚", price:40 },
+      { name:"義式香草雞", price:45 },
+      { name:"卡拉雞(辣味)", price:50 }
+    ]
+  },
+  {
+    category: "點心/吐司",
+    items: [
+      { name:"小熱狗", price:35 },
+      { name:"熱狗捲", price:40 },
+      { name:"薄片吐司", price:30 },
+      { name:"蔥抓餅", price:40 },
+      { name:"薯條", price:45 },
+      { name:"小雞球", price:45 },
+      { name:"蘿蔔糕", price:45 },
+      { name:"煎餃(8顆)", price:45 },
+      { name:"地瓜拉餅", price:45 },
+      { name:"泰式花枝", price:45 },
+      { name:"三片吐司", price:35 },
+      { name:"厚片吐司", price:40 },
+      { name:"乳酪餅", price:30 },
+      { name:"乳酪餅夾土司", price:40 },
+      { name:"雙色厚片吐司", price:45 }
+    ]
+  }
+];
+
+const categoriesView = document.getElementById("categoriesView");
+const subcategoriesView = document.getElementById("subcategoriesView");
+const itemsView = document.getElementById("itemsView");
+const cartView = document.getElementById("cartView");
+const subTitle = document.getElementById("subTitle");
+const subList = document.getElementById("subList");
+const itemsTitle = document.getElementById("itemsTitle");
+const itemsList = document.getElementById("itemsList");
+const cartList = document.getElementById("cartList");
+const cartTotal = document.getElementById("cartTotal");
+
+let cart = [];
+let currentCategory = "";
+let currentSubcategory = "";
+let currentItems = [];
+
+function renderCategories(){
+  categoriesView.innerHTML = "<h3>請選擇分類：</h3>";
+  menuData.forEach(cat => {
+    const btn = document.createElement("button");
+    btn.className = "category-btn";
+    btn.textContent = cat.category;
+    btn.onclick = () => {
+      currentCategory = cat.category;
+      if(cat.subcategories){
+        showSubcategories(cat);
+      } else {
+        showItems(cat.items, cat.category);
+      }
+    };
+    categoriesView.appendChild(btn);
+  });
+}
+
+function showSubcategories(cat){
+  categoriesView.classList.add("hidden");
+  subcategoriesView.classList.remove("hidden");
+  subTitle.textContent = `選擇「${cat.category}」細項：`;
+  subList.innerHTML = "";
+  cat.subcategories.forEach(sub => {
+    const btn = document.createElement("button");
+    btn.className = "category-btn";
+    btn.textContent = sub.name;
+    btn.onclick = () => {
+      currentSubcategory = sub.name;
+      showItems(sub.items, sub.name);
+    };
+    subList.appendChild(btn);
+  });
+}
+
+function addToCart(item, title, qty, price, size, taste, freeDrink) {
+  cart.push({
+    category: title, // 💡 使用當前顯示的title避免分類錯誤
+    name: item.name,
+    qty: parseInt(qty.value),
+    price: price,
+    size: size || "",
+    taste: taste || "",
+    freeDrink: freeDrink || ""
+  });
+}
+
+function showItems(items, title){
+  subcategoriesView.classList.add("hidden");
+  categoriesView.classList.add("hidden");
+  cartView.classList.add("hidden");
+  itemsView.classList.remove("hidden");
+  itemsTitle.textContent = title;
+  currentItems = items;
+  itemsList.innerHTML = "";
+
+  items.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "item";
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "item-name";
+    nameDiv.textContent = item.name;
+    const priceDiv = document.createElement("div");
+    priceDiv.textContent = item.priceM ? `M:${item.priceM}/L:${item.priceL}` : `${item.price}元`;
+
+    const controls = document.createElement("div");
+    controls.className = "controls";
+    let taste = "";
+    let size = "";
+    let freeDrink = "";
+
+    // 免費飲料
+    if(title.includes("鐵板麵") || title.includes("義大利麵")){
+      ["奶茶","紅茶","無糖綠茶"].forEach(drink=>{
+        const btn = document.createElement("button");
+        btn.textContent = drink;
+        btn.className = "size-btn";
+        btn.onclick = () => {
+          freeDrink = drink;
+          controls.querySelectorAll(".size-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+        };
+        controls.appendChild(btn);
+      });
+    }
+
+    // 口味
+    if(item.tasteOptions){
+      item.tasteOptions.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt;
+        btn.className = "taste-btn";
+        btn.onclick = () => {
+          taste = opt;
+          controls.querySelectorAll(".taste-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+        };
+        controls.appendChild(btn);
+      });
+    }
+
+    // 飲料尺寸
+    if(item.priceM){
+      size = "M";
+      const btnM = document.createElement("button");
+      btnM.textContent = "M";
+      btnM.className = "size-btn active";
+      const btnL = document.createElement("button");
+      btnL.textContent = "L";
+      btnL.className = "size-btn";
+      btnM.onclick = () => { size = "M"; btnM.classList.add("active"); btnL.classList.remove("active"); };
+      btnL.onclick = () => { size = "L"; btnL.classList.add("active"); btnM.classList.remove("active"); };
+      controls.append(btnM, btnL);
+    }
+
+    // 數量控制
+    const minus = document.createElement("button");
+    minus.textContent = "-";
+    const qty = document.createElement("input");
+    qty.type = "number"; qty.value = 0; qty.min = 0;
+    const plus = document.createElement("button");
+    plus.textContent = "+";
+    minus.onclick = () => { if(qty.value>0) qty.value--; };
+    plus.onclick = () => { qty.value++; };
+
+    // 加入購物車
+    const add = document.createElement("button");
+    add.textContent = "加入";
+    add.onclick = () => {
+      if(parseInt(qty.value) > 0){
+        if(item.tasteOptions && !taste){ alert("請選擇口味"); return; }
+        let p = item.price;
+        if(item.priceM){ p = size === "M" ? item.priceM : item.priceL; }
+        addToCart(item, title, qty, p, size, taste, freeDrink);
+        qty.value = 0;
+        alert("已加入購物車");
+      } else {
+        alert("請選擇數量");
+      }
+    };
+
+    controls.append(minus, qty, plus, add);
+    div.append(nameDiv, priceDiv, controls);
+    itemsList.appendChild(div);
+  });
+}
+
+
+function showCart(){
+  itemsView.classList.add("hidden");
+  categoriesView.classList.add("hidden");
+  subcategoriesView.classList.add("hidden");
+  cartView.classList.remove("hidden");
+  cartList.innerHTML = "";
+  let total = 0;
+  cart.forEach((i, idx) => {
+    total += i.qty * i.price;
+    const div = document.createElement("div");
+    div.className = "cart-item";
+    let text = i.category;
+    if(i.name==="蘑菇" || i.name==="黑胡椒"){
+      text += `(${i.name})`;
+    } else {
+      if(i.taste){
+        text += `(${i.taste})`;
+      }
+      text += ` ${i.name}`;
+    }
+    if(i.size){
+      text += `(${i.size})`;
+    }
+    if(i.freeDrink){
+      text += ` [附: ${i.freeDrink}]`;
+    }
+    text += ` x${i.qty} = ${i.qty*i.price}元`;
+    div.textContent = text;
+    const del = document.createElement("button");
+    del.textContent = "刪除";
+    del.onclick = () => { cart.splice(idx,1); showCart(); };
+    div.appendChild(del);
+    cartList.appendChild(div);
+  });
+  cartTotal.textContent = total;
+}
+
+function submitOrder(){
+  if(cart.length === 0){ alert("請先選購商品"); return; }
+  const total = cart.reduce((sum, i) => sum + i.qty * i.price, 0);
+  fetch("https://script.google.com/macros/s/AKfycbwexazOo1_DwIWxdUm5ycFq-1xAGf7JY_51oFIFVIihMuchk0nVNElyTvW023kIZRL8jw/exec", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ items: cart, type: "外帶", table: "N/A", total: total, time: new Date().toLocaleString() })
+  })
+  .then(res => res.text())
+  .then(msg => { alert("✅ 訂單已送出！\n"+msg); cart=[]; backToCategories(); })
+  .catch(err => { alert("❌ 訂單送出失敗："+err); });
+}
+
+function backToCategories(){
+  cartView.classList.add("hidden");
+  itemsView.classList.add("hidden");
+  subcategoriesView.classList.add("hidden");
+  categoriesView.classList.remove("hidden");
+}
+
+renderCategories();
+
+</script>
+</body>
+</html>
