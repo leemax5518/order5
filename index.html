@@ -497,7 +497,7 @@ function showCart(){
 function submitOrder(){
   if(cart.length === 0){ alert("請先選購商品"); return; }
   const total = cart.reduce((sum, i) => sum + i.qty * i.price, 0);
-  fetch("https://script.google.com/macros/s/AKfycbwIjcPXSuWnmXYOWA4QFOzVNAJIpYgTmgKJxlxaZ6pYC4L-mQz5I9N-K9JbCwOeCLBhqA/exec", {
+  fetch("https://script.google.com/macros/s/AKfycbxZZe-wCY2oH5rjR8iuAE2wJYx9mNY5G-ql7rhEmWCUzXYLgK6gdvFA_4JxhaMbqKLnUw/exec", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ items: cart, type: "外帶", table: "N/A", total: total, time: new Date().toLocaleString() })
